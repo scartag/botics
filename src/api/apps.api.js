@@ -33,7 +33,7 @@ export default class AppsApi {
   }
 
   async addSub(request) {
-    await this.axios.post(`${this.endPoint}/subscriptions/`, request);
+    return await this.axios.post(`${this.endPoint}/subscriptions/`, request);
   }
 
   async updateSub(id, request) {

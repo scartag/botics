@@ -40,7 +40,7 @@ export default class AppService {
   }
 
   async addSub(request) {
-    await this.api.addSub(request);
+    return await this.api.addSub(request);
   }
 
   async updateSub(id, request) {
