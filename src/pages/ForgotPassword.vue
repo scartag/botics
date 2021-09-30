@@ -11,6 +11,7 @@
             <div v-if="!emailSent">
               <label for="email-address" class="sr-only">Email</label>
               <input
+                @keyup.enter="reset"
                 v-model="email"
                 :disabled="loading"
                 id="email-address"
@@ -108,6 +109,7 @@ export default {
   },
   methods: {
     reset: async function () {
+      if (!this.valid) return;
       try {
         this.loading = true;
         await this.accountService.passwordReset({ email: this.email });

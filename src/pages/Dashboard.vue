@@ -1,6 +1,6 @@
 <template>
   <header class="vld-parent">
-    <loading v-model:active="loading" :is-full-page="fullPage" color="pink" />
+    <loading v-model:active="loading" :is-full-page="true" color="pink" />
     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
       <h1 class="text-xl leading-6 font-semibold text-gray-900">Dashboard</h1>
     </div>

@@ -4,6 +4,18 @@ export default class AppsApi {
     this.endPoint = 'api/v1';
   }
 
+  async createApp(request) {
+    await this.axios.post(`${this.endPoint}/apps/`, request);
+  }
+
+  async updateApp(id, request) {
+    await this.axios.put(`${this.endPoint}/apps/${id}/`, request);
+  }
+
+  async deleteApp(id) {
+    return await this.axios.delete(`${this.endPoint}/apps/${id}/`);
+  }
+
   async getApps() {
     return await this.axios.get(`${this.endPoint}/apps/`);
   }
@@ -12,7 +24,19 @@ export default class AppsApi {
     return await this.axios.get(`${this.endPoint}/apps/${id}/`);
   }
 
-  async getPlans() {}
+  async getPlans() {
+    return await this.axios.get(`${this.endPoint}/plans/`);
+  }
 
-  async getSub(id) {}
+  async getSub(id) {
+    return await this.axios.get(`${this.endPoint}/subscriptions/${id}/`);
+  }
+
+  async addSub(request) {
+    await this.axios.post(`${this.endPoint}/subscriptions/`, request);
+  }
+
+  async updateSub(id, request) {
+    return await this.axios.put(`${this.endPoint}/subscriptions/${id}/`, request);
+  }
 }

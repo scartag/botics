@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { routeNames } from '@/router/routes';
+import authGuard from '@/router/authGuard';
 
 const routes = [
   {
@@ -7,12 +8,14 @@ const routes = [
     name: routeNames.dashboard,
     exact: true,
     component: () => import('../pages/Dashboard.vue'),
+    beforeEnter: authGuard,
   },
   {
     path: '/create-app',
     name: routeNames.createApp,
     exact: true,
     component: () => import('../pages/Create.vue'),
+    beforeEnter: authGuard,
   },
   {
     path: '/manage-app/:id',
@@ -20,6 +23,7 @@ const routes = [
     exact: true,
     props: true,
     component: () => import('../pages/Manage.vue'),
+    beforeEnter: authGuard,
   },
   {
     path: '/login',

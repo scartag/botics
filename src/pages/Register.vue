@@ -9,6 +9,7 @@
             <label for="email" class="block text-sm font-medium text-gray-700"> Full Name </label>
             <div class="mt-1">
               <input
+                @keyup.enter="register"
                 v-model="fullName"
                 id="fullName"
                 name="fullName"
@@ -23,6 +24,7 @@
             <label for="email" class="block text-sm font-medium text-gray-700"> Email address </label>
             <div class="mt-1">
               <input
+                @keyup.enter="register"
                 v-model="email"
                 id="email"
                 name="email"
@@ -38,6 +40,7 @@
             <label for="password" class="block text-sm font-medium text-gray-700"> Password </label>
             <div class="mt-1">
               <input
+                @keyup.enter="register"
                 id="password"
                 v-model="password"
                 name="password"
@@ -53,6 +56,7 @@
             <label for="confirmPassword" class="block text-sm font-medium text-gray-700"> Confirm Password </label>
             <div class="mt-1 relative">
               <input
+                @keyup.enter="register"
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
@@ -160,6 +164,8 @@ export default {
   },
   methods: {
     async register() {
+      if (!this.valid) return;
+
       const request = {
         fullName: this.fullName,
         email: this.email,

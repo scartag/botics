@@ -1,6 +1,6 @@
 <template>
   <header class="vld-parent">
-    <loading v-model:active="loading" :is-full-page="fullPage" color="pink" />
+    <loading v-model:active="loading" :is-full-page="true" color="pink" />
     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
       <h1 class="text-xl leading-6 font-semibold text-gray-900">Manage App</h1>
     </div>
@@ -18,6 +18,7 @@
                 </div>
                 <div>
                   <button
+                    @click="deleteConfirm"
                     type="button"
                     class="
                       del-button
@@ -80,11 +81,11 @@
                     <RadioGroup v-model="selected" class="w-full">
                       <RadioGroupLabel class="sr-only"> Privacy setting </RadioGroupLabel>
                       <div class="bg-white rounded-md -space-y-px">
-                        <RadioGroupOption as="template" v-for="(option, optionIdx) in options" :key="option.name" :value="option" v-slot="{ checked, active }">
+                        <RadioGroupOption as="template" v-for="(option, optionIdx) in appService.appOptions" :key="option.name" :value="option" v-slot="{ checked, active }">
                           <div
                             :class="[
                               optionIdx === 0 ? 'rounded-tl-md ro  unded-tr-md' : '',
-                              optionIdx === options.length - 1 ? 'rounded-bl-md rounded-br-md' : '',
+                              optionIdx === appService.appOptions.length - 1 ? 'rounded-bl-md rounded-br-md' : '',
                               checked ? 'bg-cyan-50 border-cyan-200 z-10' : 'border-gray-200',
                               'relative border p-4 flex cursor-pointer focus:outline-none',
                             ]"
@@ -118,8 +119,26 @@
                   Back to App list
                 </button>
                 <button
+                  @click="update"
+                  :disabled="!valid || loading"
                   type="button"
-                  class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-400 hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  class="
+                    disabled:opacity-50
+                    ml-3
+                    inline-flex
+                    justify-center
+                    py-2
+                    px-4
+                    border border-transparent
+                    shadow-sm
+                    text-sm
+                    font-medium
+                    rounded-md
+                    text-white
+                    bg-red-400
+                    hover:bg-opacity-90
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500
+                  "
                 >
                   Save Changes
                 </button>
@@ -136,11 +155,11 @@
                   <RadioGroup v-model="currentPlan" class="w-full">
                     <RadioGroupLabel class="sr-only"> Privacy setting </RadioGroupLabel>
                     <div class="bg-white rounded-md -space-y-px">
-                      <RadioGroupOption as="template" v-for="(option, optionIdx) in subs" :key="option.name" :value="option" v-slot="{ checked, active }">
+                      <RadioGroupOption as="template" v-for="(option, optionIdx) in plans" :key="option.name" :value="option" v-slot="{ checked, active }">
                         <div
                           :class="[
                             optionIdx === 0 ? 'rounded-tl-md ro  unded-tr-md' : '',
-                            optionIdx === options.length - 1 ? 'rounded-bl-md rounded-br-md' : '',
+                            optionIdx === plans.length - 1 ? 'rounded-bl-md rounded-br-md' : '',
                             checked ? 'bg-cyan-50 border-cyan-200 z-10' : 'border-gray-200',
                             'relative border p-4 flex cursor-pointer focus:outline-none',
                           ]"
@@ -171,10 +190,28 @@
           <div class="pt-5">
             <div class="flex justify-end">
               <button
-                type="submit"
-                class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-400 hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                @click="subscribe"
+                :disabled="!subButtonValid"
+                type="button"
+                class="
+                  disabled:opacity-50
+                  ml-3
+                  inline-flex
+                  justify-center
+                  py-2
+                  px-4
+                  border border-transparent
+                  shadow-sm
+                  text-sm
+                  font-medium
+                  rounded-md
+                  text-white
+                  bg-red-400
+                  hover:bg-opacity-90
+                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500
+                "
               >
-                Add Plan
+                {{ subscriptionButtonText }}
               </button>
             </div>
           </div>
@@ -182,6 +219,8 @@
       </div>
     </div>
   </main>
+  <ErrorNotification ref="error" />
+  <DeleteConfirmation ref="confirm" @activateAction="doDelete" />
 </template>
 
 <script>
@@ -190,17 +229,8 @@ import { routeNames } from '@/router/routes';
 import { appService } from '@/types/dependencies.type';
 import Loading from 'vue-loading-overlay';
 import 'vue-loading-overlay/dist/vue-loading.css';
-
-const options = [
-  { type: 'Web', framework: 'Django', name: 'Web', description: 'A Django based web application' },
-  { type: 'Mobile', framework: 'React Native', name: 'Mobile App', description: 'A mobile application built with React Native' },
-];
-
-const plans = [
-  { name: 'Free', description: 'Free Plan', price: '0.00' },
-  { name: 'Standard', description: 'Standard Plan', price: '10.00' },
-  { name: 'Pro', description: 'Pro Plan', price: '20.00' },
-];
+import ErrorNotification from '@/components/ErrorNotification';
+import DeleteConfirmation from '@/components/DeleteConfirmation';
 
 export default {
   name: 'Manage',
@@ -209,6 +239,8 @@ export default {
   },
   dependencies: [appService],
   components: {
+    DeleteConfirmation,
+    ErrorNotification,
     RadioGroup,
     RadioGroupDescription,
     RadioGroupLabel,
@@ -217,19 +249,121 @@ export default {
   },
   data() {
     return {
-      options,
-      plans,
+      plans: [],
       loading: false,
       routeNames,
       currentPlan: null,
+      previousPlan: null,
       sub: null,
       selected: null,
       app: {},
     };
   },
+  computed: {
+    valid() {
+      return this.app && this.app?.name?.trim().length > 0 && this.selected;
+    },
+    isUpgrade() {
+      if (this.currentPlan && this.previousPlan) {
+        const current = parseFloat(this.currentPlan.price);
+        const previous = parseFloat(this.previousPlan.price);
+        return current > previous;
+      }
+      return false;
+    },
+    subButtonValid() {
+      return this.currentPlan !== null && this.currentPlan.id !== this.previousPlan?.id;
+    },
+    subscriptionButtonText() {
+      return this.previousPlan == null ? 'Add Plan' : this.isUpgrade ? 'Upgrade Plan' : this.currentPlan.id === this.previousPlan.id ? 'Add Plan' : 'Downgrade Plan';
+    },
+  },
   methods: {
+    deleteConfirm() {
+      this.$refs.confirm.show();
+    },
+    async doDelete() {
+      this.$refs.error.hide();
+      try {
+        this.loading = true;
+        await this.appService.deleteApp(this.app.id);
+        this.$router.push({ name: this.routeNames.dashboard });
+      } catch {
+        this.$refs.error.show({ title: 'Error!', description: 'The app deletion process failed.' });
+      } finally {
+        this.loading = false;
+      }
+    },
+    async update() {
+      const request = {
+        name: this.app.name,
+        description: this.app.description,
+        type: this.selected.type,
+        framework: this.selected.framework,
+        domain_name: this.app.domain_name,
+      };
+      this.$refs.error.hide();
+      try {
+        this.loading = true;
+        await this.appService.updateApp(this.app.id, request);
+      } catch {
+        this.$refs.error.show({ title: 'Error!', description: 'The app update process failed.' });
+      } finally {
+        this.loading = false;
+      }
+    },
     cancel() {
       this.$router.push({ name: routeNames.dashboard });
+    },
+    async subscribe() {
+      if (this.sub) {
+        await this.updateSub();
+      } else {
+        await this.addSub();
+      }
+    },
+    async addSub() {
+      const request = {
+        plan: this.currentPlan.id,
+        app: this.app.id,
+        active: true,
+      };
+      this.$refs.error.hide();
+      try {
+        this.loading = true;
+        const r = await this.appService.addSub(request);
+        this.sub = r.data;
+        this.updateCurrentPlan(this.sub);
+      } catch (e) {
+        console.log(e);
+        this.$refs.error.show({ title: 'Error!', description: 'The subscription process failed.' });
+      } finally {
+        this.loading = false;
+      }
+    },
+    async updateSub() {
+      const request = {
+        plan: this.currentPlan.id,
+        app: this.app.id,
+        active: true,
+      };
+      this.$refs.error.hide();
+      try {
+        this.loading = true;
+        const r = await this.appService.updateSub(this.sub.id, request);
+        this.sub = r.data;
+        this.updateCurrentPlan(this.sub);
+      } catch {
+        this.$refs.error.show({ title: 'Error!', description: 'The subscription update process failed.' });
+      } finally {
+        this.loading = false;
+      }
+    },
+    updateCurrentPlan(sub) {
+      const plan = this.plans.find((x) => x.id === sub.plan);
+      const index = this.plans.findIndex((x) => x.id === sub.plan);
+      this.currentPlan = this.plans[index];
+      this.previousPlan = { ...plan };
     },
   },
   async mounted() {
@@ -237,7 +371,14 @@ export default {
       this.loading = true;
       const r = await this.appService.getApp(this.id);
       this.app = r.data;
-      this.selected = this.options.find((p) => p.type === this.app.type);
+      this.selected = this.appService.appOptions.find((p) => p.type === this.app.type);
+      const p = await this.appService.getPlans();
+      this.plans = [...p.data];
+      if (this.app.subscription) {
+        const s = await this.appService.getSub(this.app.subscription);
+        this.sub = s.data;
+        this.updateCurrentPlan(this.sub);
+      }
     } catch (e) {
       this.cancel();
     } finally {

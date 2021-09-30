@@ -1,5 +1,6 @@
 <template>
-  <header>
+  <header class="vld-parent">
+    <loading v-model:active="loading" :is-full-page="true" color="pink" />
     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
       <h1 class="text-xl leading-6 font-semibold text-gray-900">Create App</h1>
     </div>
@@ -19,7 +20,7 @@
                 <div class="sm:col-span-3">
                   <label for="name" class="block text-sm font-medium text-gray-700"> Application Name </label>
                   <div class="mt-1 flex rounded-md shadow-sm">
-                    <input type="text" name="name" id="name" autocomplete="off" class="flex-1 focus:ring-cyan-500 focus:border-cyan-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300" />
+                    <input v-model="name" type="text" name="name" id="name" autocomplete="off" class="flex-1 focus:ring-cyan-500 focus:border-cyan-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300" />
                   </div>
                 </div>
                 <div class="sm:col-span-3"></div>
@@ -27,7 +28,7 @@
                 <div class="sm:col-span-3">
                   <label for="description" class="block text-sm font-medium text-gray-700"> Description </label>
                   <div class="mt-1 flex rounded-md shadow-sm">
-                    <input type="text" name="description" id="description" autocomplete="off" class="flex-1 focus:ring-cyan-500 focus:border-cyan-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300" />
+                    <input v-model="description" type="text" name="description" id="description" autocomplete="off" class="flex-1 focus:ring-cyan-500 focus:border-cyan-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300" />
                   </div>
                 </div>
                 <div class="sm:col-span-3"></div>
@@ -35,7 +36,7 @@
                 <div class="sm:col-span-3">
                   <label for="domain" class="block text-sm font-medium text-gray-700"> Domain Name </label>
                   <div class="mt-1 flex rounded-md shadow-sm">
-                    <input type="text" name="domain" id="domain" autocomplete="off" class="flex-1 focus:ring-cyan-500 focus:border-cyan-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300" />
+                    <input v-model="domain" type="text" name="domain" id="domain" autocomplete="off" class="flex-1 focus:ring-cyan-500 focus:border-cyan-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300" />
                   </div>
                 </div>
                 <div class="sm:col-span-3"></div>
@@ -46,11 +47,11 @@
                     <RadioGroup v-model="selected" class="w-full">
                       <RadioGroupLabel class="sr-only"> Privacy setting </RadioGroupLabel>
                       <div class="bg-white rounded-md -space-y-px">
-                        <RadioGroupOption as="template" v-for="(option, optionIdx) in options" :key="option.name" :value="option" v-slot="{ checked, active }">
+                        <RadioGroupOption as="template" v-for="(option, optionIdx) in appService.appOptions" :key="option.name" :value="option" v-slot="{ checked, active }">
                           <div
                             :class="[
                               optionIdx === 0 ? 'rounded-tl-md ro  unded-tr-md' : '',
-                              optionIdx === options.length - 1 ? 'rounded-bl-md rounded-br-md' : '',
+                              optionIdx === appService.appOptions.length - 1 ? 'rounded-bl-md rounded-br-md' : '',
                               checked ? 'bg-cyan-50 border-cyan-200 z-10' : 'border-gray-200',
                               'relative border p-4 flex cursor-pointer focus:outline-none',
                             ]"
@@ -84,8 +85,26 @@
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-400 hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  @click="create"
+                  :disabled="!valid || loading"
+                  type="button"
+                  class="
+                    disabled:opacity-50
+                    ml-3
+                    inline-flex
+                    justify-center
+                    py-2
+                    px-4
+                    border border-transparent
+                    shadow-sm
+                    text-sm
+                    font-medium
+                    rounded-md
+                    text-white
+                    bg-red-400
+                    hover:bg-opacity-90
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500
+                  "
                 >
                   Create App
                 </button>
@@ -96,40 +115,63 @@
       </div>
     </div>
   </main>
+  <ErrorNotification ref="error" />
 </template>
 
 <script>
-import { ref } from 'vue';
 import { RadioGroup, RadioGroupDescription, RadioGroupLabel, RadioGroupOption } from '@headlessui/vue';
 import { routeNames } from '@/router/routes';
-
-const options = [
-  { name: 'Web', description: 'A Django based web application' },
-  { name: 'Mobile App', description: 'A mobile application built with React Native' },
-];
+import { appService } from '@/types/dependencies.type';
+import Loading from 'vue-loading-overlay';
+import 'vue-loading-overlay/dist/vue-loading.css';
+import ErrorNotification from '@/components/ErrorNotification';
 
 export default {
   name: 'Create',
+  dependencies: [appService],
   components: {
+    ErrorNotification,
     RadioGroup,
     RadioGroupDescription,
     RadioGroupLabel,
     RadioGroupOption,
-  },
-  setup() {
-    const selected = ref(options[0]);
-
-    return {
-      selected,
-      options: options,
-    };
+    Loading,
   },
   data() {
     return {
+      loading: false,
+      selected: null,
+      name: '',
+      description: '',
+      domain: '',
       routeNames,
     };
   },
+  computed: {
+    valid() {
+      return this.name.trim().length > 0 && this.selected;
+    },
+  },
   methods: {
+    async create() {
+      const request = {
+        name: this.name,
+        description: this.description,
+        type: this.selected.type,
+        framework: this.selected.framework,
+        domain_name: this.domain,
+      };
+      this.$refs.error.hide();
+      try {
+        this.loading = true;
+        await this.appService.createApp(request);
+        this.$router.push({ name: this.routeNames.dashboard });
+      } catch {
+        this.$refs.error.show({ title: 'Error!', description: 'The app creation process failed.' });
+      } finally {
+        this.loading = false;
+      }
+    },
     cancel() {
       this.$router.push({ name: routeNames.dashboard });
     },

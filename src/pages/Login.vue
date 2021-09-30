@@ -38,6 +38,7 @@
             <div>
               <label for="password" class="sr-only">Password</label>
               <input
+                @keyup.enter="login"
                 v-model="password"
                 id="password"
                 name="password"
@@ -148,6 +149,7 @@ export default {
   },
   methods: {
     async login() {
+      if (!this.valid) return;
       this.$refs.error.hide();
       try {
         this.loading = true;
